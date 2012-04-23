@@ -6,6 +6,10 @@ data
 *.csv
 *.sw[op]
 
+# Output
+*.pdf
+*.svg
+
 # R
 R.log
 .Rhistory
