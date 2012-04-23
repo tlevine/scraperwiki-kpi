@@ -5,6 +5,8 @@ library(plyr)
 library(ggplot2)
 library(Cairo)
 
+DATEFORMAT = '%b%y'
+
 raw <- read.csv(
   # This is a dump of the username, date_joined and last_login columns
   # from the auth_users Django table.
@@ -14,6 +16,7 @@ raw <- read.csv(
 )
 #print(raw[sample(nrow(raw), 3),])
 
+raw$script_count <- as.numeric(raw$script_count)
 raw$last_login <- as.POSIXct(raw$last_login)
 raw$date_joined <- as.POSIXct(raw$date_joined)
 
@@ -27,41 +30,56 @@ kpi <- melt(raw,
 )
 colnames(kpi)[-(1:(ncol(kpi)-2))] <- c('event', 'datetime') # Dunno why it doesn't work above
 
+# Ignore users without low active time because they won't show up
+# and because they'll lead to division by almost zero.
+kpi <- subset(kpi, active_time > 1)
+
+# Ignore users with a low script-creation rate
+kpi <- subset(kpi, script_count/active_time > 0.1)
+
+# Ignore users with a low script count
+# kpi <- subset(kpi, script_count > 2)
+
 p <- ggplot(kpi) +
   aes(x = datetime, group = username) +
-  scale_x_datetime('Span of activity, from user registration to most recent login', format = '%a%y') +
+  scale_x_datetime('Span of activity, from user registration to most recent login', format = DATEFORMAT) +
   opts(
     title = 'ScraperWiki Coder Activity',
     theme_text(family = "sans", face = "bold"),
     panel.background = theme_rect(fill = NA, colour = NA) # Clear background
   ) +
-# aes(label = username) + geom_text() + #Usernames
-  geom_line(color = alpha('black', 0.1))
+  geom_line(color = alpha('black', 0.2))
 
 plots <- list(
-  duration = p + aes(y = active_time) + scale_y_continuous('Users sorted by length of activity'),
+  active_time = p + aes(y = active_time) + scale_y_continuous('Users sorted by length of activity'),
   script_count = p + aes(y = script_count) + scale_y_continuous('Users sorted by number of scripts'),
-  last_login = p + aes(y = last_login) + scale_y_datetime('Users sorted by date of most recent login', format = '%a%y'),
-  date_joined = p + aes(y = date_joined) + scale_y_datetime('Users sorted by date joined', format = '%a%y')
+  normalized_script_count = p + aes(y = script_count/(active_time)) + scale_y_continuous('Users sorted by number of scripts per day'),
+  normalized_script_count_with_names = p + aes(y = script_count/(active_time), color = alpha('black', 0.4)) +
+    scale_y_continuous('Users sorted by number of scripts per day') +
+    aes(label = username) + geom_text(color = alpha('black', 0.6)), #Usernames
+  last_login = p + aes(y = last_login) + scale_y_datetime('Users sorted by date of most recent login', format = DATEFORMAT),
+  date_joined = p + aes(y = date_joined) + scale_y_datetime('Users sorted by date joined', format = DATEFORMAT)
 )
 
-# Plot them
-print('Plotting...')
+plot.kpi <- function(){
+  # Plot them
+  print('Plotting...')
 
-print('Generating pdfs...')
-Cairo('coder_activity.pdf',
-   width = 297, height = 210, units = 'mm',
-   pointsize = 10, type = 'pdf'
-)
-l_ply(plots, print)
-dev.off()
+  print('Generating pdfs...')
+  Cairo('coder_activity.pdf',
+     width = 297, height = 210, units = 'mm',
+     pointsize = 10, type = 'pdf'
+  )
+  l_ply(plots, print)
+  dev.off()
 
-print('Generating svg...')
-Cairo('coder_activity.svg',
-   width = 297, height = 210, units = 'mm',
-   pointsize = 10, type = 'svg'
-)
-print(plots$date_joined)
-dev.off()
+  print('Generating svg...')
+  Cairo('coder_activity.svg',
+     width = 297, height = 210, units = 'mm',
+     pointsize = 10, type = 'svg'
+  )
+  print(plots$date_joined)
+  dev.off()
 
-print('Finished plotting')
+  print('Finished plotting')
+}
