@@ -32,10 +32,10 @@ colnames(kpi)[-(1:(ncol(kpi)-2))] <- c('event', 'datetime') # Dunno why it doesn
 
 # Ignore users without low active time because they won't show up
 # and because they'll lead to division by almost zero.
-kpi <- subset(kpi, active_time > 1)
+kpi <- subset(kpi, active_time > 0.5)
 
 # Ignore users with a low script-creation rate
-kpi <- subset(kpi, script_count/active_time > 0.1)
+# kpi <- subset(kpi, script_count/active_time > 0.1)
 
 # Ignore users with a low script count
 # kpi <- subset(kpi, script_count > 2)
@@ -55,6 +55,7 @@ p <- ggplot(kpi) +
 
 plots <- list(
   active_time = p + aes(y = active_time) + scale_y_continuous('Users sorted by length of activity'),
+  active_time_log = p + aes(y = active_time) + scale_y_log10('Users sorted by length of activity, log scale'),
   script_count = p + aes(y = script_count) + scale_y_continuous('Users sorted by number of scripts'),
   normalized_script_count = p + aes(y = script_count/(active_time)) + scale_y_continuous('Users sorted by number of scripts per day'),
   normalized_script_count_with_names = p + aes(y = script_count/(active_time), color = alpha('black', 0.4)) +
