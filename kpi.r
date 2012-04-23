@@ -29,7 +29,7 @@ colnames(kpi)[-(1:(ncol(kpi)-2))] <- c('event', 'datetime') # Dunno why it doesn
 
 p <- ggplot(kpi) +
   aes(x = datetime, group = username) +
-  scale_x_datetime('Span of activity, from user registration to most recent login') +
+  scale_x_datetime('Span of activity, from user registration to most recent login', format = '%a%y') +
   opts(
     title = 'ScraperWiki Coder Activity',
     theme_text(family = "sans", face = "bold"),
@@ -40,8 +40,9 @@ p <- ggplot(kpi) +
 
 plots <- list(
   duration = p + aes(y = active_time) + scale_y_continuous('Users sorted by length of activity'),
-  last_login = p + aes(y = last_login) + scale_y_datetime('Users sorted by date of most recent login'),
-  date_joined = p + aes(y = date_joined) + scale_y_datetime('Users sorted by date joined login')
+  script_count = p + aes(y = script_count) + scale_y_continuous('Users sorted by number of scripts'),
+  last_login = p + aes(y = last_login) + scale_y_datetime('Users sorted by date of most recent login', format = '%a%y'),
+  date_joined = p + aes(y = date_joined) + scale_y_datetime('Users sorted by date joined', format = '%a%y')
 )
 
 # Plot them
