@@ -42,12 +42,15 @@ kpi <- subset(kpi, script_count/active_time > 0.1)
 
 p <- ggplot(kpi) +
   aes(x = datetime, group = username) +
-  scale_x_datetime('Span of activity, from user registration to most recent login', format = DATEFORMAT) +
+  scale_x_datetime('Span of activity, from user registration to most recent login',
+    format = DATEFORMAT, major = "3 months", minor = "1 month"
+  ) +
   opts(
     title = 'ScraperWiki Coder Activity',
     theme_text(family = "sans", face = "bold"),
     panel.background = theme_rect(fill = NA, colour = NA) # Clear background
   ) +
+# geom_vline(position = as.POSIXct("2010-01-01"), color = 'black') +
   geom_line(color = alpha('black', 0.2))
 
 plots <- list(
