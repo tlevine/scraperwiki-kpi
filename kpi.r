@@ -18,7 +18,7 @@ raw$last_login <- as.POSIXct(raw$last_login)
 raw$date_joined <- as.POSIXct(raw$date_joined)
 
 # Subset for testing
-raw <- raw[sample.int(nrow(raw), 100),]
+# raw <- raw[sample.int(nrow(raw), 100),]
 
 raw$active_time <- as.numeric(difftime(raw$last_login, raw$date_joined, units = 'days'))
 kpi <- melt(raw,
@@ -32,7 +32,8 @@ p <- ggplot(kpi) +
   scale_x_datetime('Span of activity, from user registration to most recent login') +
   opts(
     title = 'ScraperWiki Coder Activity',
-    theme_text(family = "sans", face = "bold")
+    theme_text(family = "sans", face = "bold"),
+    panel.background = theme_rect(fill = NA, colour = NA) # Clear background
   ) +
 # aes(label = username) + geom_text() + #Usernames
   geom_line(color = alpha('black', 0.1))
@@ -46,13 +47,20 @@ plots <- list(
 # Plot them
 print('Plotting...')
 
-#pdf('coder_activity.pdf', paper = 'a4r', fonts = 'Helvetica')
-# Cairo kerns fonts properly
+print('Generating pdfs...')
 Cairo('coder_activity.pdf',
    width = 297, height = 210, units = 'mm',
    pointsize = 10, type = 'pdf'
 )
 l_ply(plots, print)
+dev.off()
+
+print('Generating svg...')
+Cairo('coder_activity.svg',
+   width = 297, height = 210, units = 'mm',
+   pointsize = 10, type = 'svg'
+)
+print(plots$date_joined)
 dev.off()
 
 print('Finished plotting')
