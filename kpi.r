@@ -47,8 +47,11 @@ plots <- list(
 print('Plotting...')
 
 #pdf('coder_activity.pdf', paper = 'a4r', fonts = 'Helvetica')
-# CairoPDF kerns fonts properly
-CairoPDF('coder_activity.pdf', paper = 'a4r', pointsize = 10)
+# Cairo kerns fonts properly
+Cairo('coder_activity.pdf',
+   width = 297, height = 210, units = 'mm',
+   pointsize = 10, type = 'pdf'
+)
 l_ply(plots, print)
 dev.off()
 
