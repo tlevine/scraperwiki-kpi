@@ -54,8 +54,8 @@ p <- ggplot(kpi) +
   geom_line(color = alpha('black', 0.2))
 
 plots <- list(
-  active_time = p + aes(y = active_time) + scale_y_continuous('Users sorted by length of activity'),
-  active_time_log = p + aes(y = active_time) + scale_y_log10('Users sorted by length of activity, log scale'),
+  active_time = p + aes(y = active_time) + scale_y_continuous('Users sorted by days of activity'),
+  active_time_log = p + aes(y = active_time) + scale_y_log10('Users sorted by days of activity, log scale'),
   script_count = p + aes(y = script_count) + scale_y_continuous('Users sorted by number of scripts'),
   normalized_script_count = p + aes(y = script_count/(active_time)) + scale_y_continuous('Users sorted by number of scripts per day'),
   normalized_script_count_with_names = p + aes(y = script_count/(active_time), color = alpha('black', 0.4)) +
