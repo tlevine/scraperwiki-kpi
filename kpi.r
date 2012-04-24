@@ -135,7 +135,7 @@ plots.other <- list(
     aes(size = script_count),
   longtime10 = plot.longtime(subset(kpi.raw, script_count >= 10),
     'ScraperWiki Coder Activity, each point is a user with ten or more scripts') +
-    aes(size = script_count),
+    aes(size = script_count)
 )
 
 plot.kpi.save <- function(){
