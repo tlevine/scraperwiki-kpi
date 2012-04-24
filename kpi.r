@@ -119,8 +119,7 @@ plots.byuser <- list(
 plot.longtime <- function(raw, title) {
   ggplot(raw) +
     aes(
-      x = last_login, y = active_time,
-      size = script_count, color = coder_type
+      x = last_login, y = active_time, color = coder_type
     ) + KPI.OPTS +
     scale_y_continuous('Days from join to last login') +
     scale_x_datetime('Date of last login',
@@ -132,12 +131,14 @@ plot.longtime <- function(raw, title) {
 plots.other <- list(
   coder_type = ggplot(melt.kpi()) + aes(x = coder_type, y = active_time) + geom_jitter() + KPI.OPTS,
   longtime2 = plot.longtime(subset(kpi.raw, script_count >= 3),
-  'ScraperWiki Coder Activity, each point is a user with three or more scripts'),
+    'ScraperWiki Coder Activity, each point is a user with three or more scripts') +
+    aes(size = script_count),
   longtime10 = plot.longtime(subset(kpi.raw, script_count >= 10),
-  'ScraperWiki Coder Activity, each point is a user with ten or more scripts')
+    'ScraperWiki Coder Activity, each point is a user with ten or more scripts') +
+    aes(size = script_count),
 )
 
-plot.kpi.save <- function(plotslist = plots.bytime){
+plot.kpi.save <- function(){
   # Plot them
   print('Plotting...')
 
@@ -146,7 +147,9 @@ plot.kpi.save <- function(plotslist = plots.bytime){
      width = 297, height = 210, units = 'mm',
      pointsize = 10, type = 'pdf'
   )
-  l_ply(plotslist, print)
+  l_ply(plots.bytime, print)
+  l_ply(plots.byuser, print)
+  l_ply(plots.other, print)
   dev.off()
 
   print('Generating svg...')
@@ -154,7 +157,7 @@ plot.kpi.save <- function(plotslist = plots.bytime){
      width = 297, height = 210, units = 'mm',
      pointsize = 10, type = 'svg'
   )
-  print(plots$date_joined)
+  print(plots.bytime$date_joined)
   dev.off()
 
   print('Finished plotting')
