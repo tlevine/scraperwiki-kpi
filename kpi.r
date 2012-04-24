@@ -6,6 +6,11 @@ library(ggplot2)
 library(Cairo)
 
 DATEFORMAT = '%b%y'
+KPI.OPTS <- opts(
+  title = 'ScraperWiki Coder Activity, each line is a user',
+  theme_text(family = "sans", face = "bold"),
+  panel.background = theme_rect(fill = NA, colour = NA) # Clear background
+)
 
 kpi.raw <- read.csv(
   # This is a dump of the username, date_joined and last_login columns
@@ -28,29 +33,16 @@ kpi.raw$coder_type <- (function(raw){
   raw$longtime <- raw$date_joined < one_month_ago
   raw$coder_type <- 'Inactive Coder'
   raw$coder_type[raw$active] <-
-    'Pseudo Active Coder' # (user who logged in at least once in the last month)'
+    'Pseudo Shorttime Active Coder' # (user who logged in at least once in the last month)'
   raw$coder_type[raw$active & raw$longtime] <-
     'Pseudo Longtime Active Coder' # (active coder who joined in an earlier month)'
   raw$coder_type
 })(kpi.raw)
 
-plot.kpi <- function(
-  raw,
-  sort.yvar = NULL,
-  testing = FALSE,
-  min.active.days = 0.5,
-  line.alpha = 0.5
+melt.kpi <- function(
+  raw = kpi.raw,
+  min.active.days = 0.5
 ){
-  # Given the y variable for plotting, return some plots
-  if (!is.null(sort.yvar)){
-    raw$username <- factor(raw$username, levels = raw$username[order(raw[,sort.yvar])])
-  }
-
-  if (testing){
-    # Subset for testing
-    raw <- raw[sample.int(nrow(raw), 100),]
-  }
-
   kpi <- melt(raw,
     id.vars = colnames(raw), measure.vars = c('date_joined', 'last_login'),
     variable.name = 'event', value.name = 'datetime'
@@ -66,17 +58,34 @@ plot.kpi <- function(
 
   # Ignore users with a low script count
   # kpi <- subset(kpi, script_count > 2)
+  kpi
+}
+
+plot.kpi <- function(
+  raw,
+  sort.yvar = NULL,
+  testing = FALSE,
+  line.alpha = 0.5,
+  ...
+){
+  # Given the y variable for plotting, return some plots
+  if (!is.null(sort.yvar)){
+    raw$username <- factor(raw$username, levels = raw$username[order(raw[,sort.yvar])])
+  }
+
+  if (testing){
+    # Subset for testing
+    raw <- raw[sample.int(nrow(raw), 100),]
+  }
+
+  kpi <- melt.kpi(raw, ...)
 
   p <- ggplot(kpi) +
     aes(x = datetime, group = username, color = coder_type) +
     scale_x_datetime('Span of activity, from user registration to most recent login',
       format = DATEFORMAT, major = "3 months", minor = "1 month"
     ) +
-    opts(
-      title = 'ScraperWiki Coder Activity',
-      theme_text(family = "sans", face = "bold"),
-      panel.background = theme_rect(fill = NA, colour = NA) # Clear background
-    ) +
+    KPI.OPTS +
     geom_line(alpha = line.alpha)
 
   p
@@ -86,15 +95,15 @@ plot.kpi <- function(
 kpi.raw <- subset(kpi.raw, script_count > 2)
 p <- plot.kpi(kpi.raw, line.alpha = 0.2)
 
-plots <- list(
-  active_time = p + aes(y = active_time) + scale_y_log10('User\'s days of activity'),
-  script_count = p + aes(y = script_count) + scale_y_continuous('User\'s number of scripts'),
-  normalized_script_count = p + aes(y = script_count/(active_time)) + scale_y_log10('User\'s number of scripts per day'),
+plots.bytime <- list(
+  active_time = p + aes(y = active_time) + scale_y_log10('Days from join to last login'),
+  script_count = p + aes(y = script_count) + scale_y_continuous('Number of scripts'),
+  normalized_script_count = p + aes(y = script_count/(active_time)) + scale_y_log10('Number of scripts per day'),
   normalized_script_count_with_names = p + aes(y = script_count/(active_time), alpha = 0.4) +
-    scale_y_continuous('User\'s number of scripts per day') +
+    scale_y_continuous('Number of scripts per day') +
     aes(label = username) + geom_text(alpha = 0.6), #Usernames
-  last_login = p + aes(y = last_login) + scale_y_datetime('User\'s date of most recent login', format = DATEFORMAT),
-  date_joined = p + aes(y = date_joined) + scale_y_datetime('User\'s join date', format = DATEFORMAT)
+  last_login = p + aes(y = last_login) + scale_y_datetime('Date of most recent login', format = DATEFORMAT),
+  date_joined = p + aes(y = date_joined) + scale_y_datetime('Join date', format = DATEFORMAT)
 )
 
 # Plot where the y axis is username sorted by sort.yvar
@@ -106,7 +115,29 @@ plots.byuser <- list(
   date_joined_subset = plot.kpi(kpi.raw.subset, 'date_joined') + aes(y = username) + scale_y_discrete('Users with more than two scripts')
 )
 
-plot.kpi.save <- function(plotslist = plots){
+
+plot.longtime <- function(raw, title) {
+  ggplot(raw) +
+    aes(
+      x = last_login, y = active_time,
+      size = script_count, color = coder_type
+    ) + KPI.OPTS +
+    scale_y_continuous('Days from join to last login') +
+    scale_x_datetime('Date of last login',
+      format = DATEFORMAT, major = "3 months", minor = "1 month"
+    ) +
+    geom_point()
+}
+
+plots.other <- list(
+  coder_type = ggplot(melt.kpi()) + aes(x = coder_type, y = active_time) + geom_jitter() + KPI.OPTS,
+  longtime2 = plot.longtime(subset(kpi.raw, script_count >= 3),
+  'ScraperWiki Coder Activity, each point is a user with three or more scripts'),
+  longtime10 = plot.longtime(subset(kpi.raw, script_count >= 10),
+  'ScraperWiki Coder Activity, each point is a user with ten or more scripts')
+)
+
+plot.kpi.save <- function(plotslist = plots.bytime){
   # Plot them
   print('Plotting...')
 
