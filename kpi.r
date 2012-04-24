@@ -21,13 +21,15 @@ raw$date_joined <- as.POSIXct(raw$date_joined)
 raw$active_time <- as.numeric(difftime(raw$last_login, raw$date_joined, units = 'days'))
 
 plot.kpi <- function(
-  raw, yvar,
+  raw,
+  sort.yvar = NULL,
   testing = FALSE,
   min.active.days = 0.5
 ){
-  # Given the raw data frame and the y variable for plotting,
-  # return some plots
-  raw$username <- factor(raw$username, levels = raw$username[order(yvar),])
+  # Given the y variable for plotting, return some plots
+  if (!is.null(sort.yvar)){
+    raw$username <- factor(raw$username, levels = raw$username[order(raw[,sort.yvar])])
+  }
 
   if (testing){
     # Subset for testing
@@ -65,37 +67,48 @@ plot.kpi <- function(
   p
 }
 
-  plots <- list(
-    active_time = p + aes(y = active_time) + scale_y_continuous('Users sorted by days of activity'),
-    active_time_log = p + aes(y = active_time) + scale_y_log10('Users sorted by days of activity, log scale'),
-    script_count = p + aes(y = script_count) + scale_y_continuous('Users sorted by number of scripts'),
-    normalized_script_count = p + aes(y = script_count/(active_time)) + scale_y_continuous('Users sorted by number of scripts per day'),
-    normalized_script_count_with_names = p + aes(y = script_count/(active_time), color = alpha('black', 0.4)) +
-      scale_y_continuous('Users sorted by number of scripts per day') +
-      aes(label = username) + geom_text(color = alpha('black', 0.6)), #Usernames
-    last_login = p + aes(y = last_login) + scale_y_datetime('Users sorted by date of most recent login', format = DATEFORMAT),
-    date_joined = p + aes(y = date_joined) + scale_y_datetime('Users sorted by date joined', format = DATEFORMAT)
+p <- plot.kpi(raw)
+
+plots <- list(
+  active_time = p + aes(y = active_time) + scale_y_continuous('User\'s days of activity'),
+  active_time_log = p + aes(y = active_time) + scale_y_log10('User\'s days of activity, log scale'),
+  script_count = p + aes(y = script_count) + scale_y_continuous('User\'s number of scripts'),
+  normalized_script_count = p + aes(y = script_count/(active_time)) + scale_y_continuous('User\'s number of scripts per day'),
+  normalized_script_count_with_names = p + aes(y = script_count/(active_time), color = alpha('black', 0.4)) +
+    scale_y_continuous('User\'s number of scripts per day') +
+    aes(label = username) + geom_text(color = alpha('black', 0.6)), #Usernames
+  last_login = p + aes(y = last_login) + scale_y_datetime('User\'s date of most recent login', format = DATEFORMAT),
+  date_joined = p + aes(y = date_joined) + scale_y_datetime('User\'s join date', format = DATEFORMAT)
+)
+
+# Plot where the y axis is username sorted by sort.yvar
+raw.subset <- subset(raw, script_count > 2)
+plots.byuser <- list(
+  last_login = plot.kpi(raw, 'last_login') + aes(y = username) + scale_y_discrete(ylab),
+  last_login_subset = plot.kpi(raw.subset, 'last_login') + aes(y = username) + scale_y_discrete(ylab),
+  date_joined = plot.kpi(raw, 'date_joined') + aes(y = username) + scale_y_discrete(ylab),
+  date_joined_subset = plot.kpi(raw.subset, 'date_joined') + aes(y = username) + scale_y_discrete(ylab)
+)
+
+plot.kpi.save <- function(plotslist = plots){
+  # Plot them
+  print('Plotting...')
+
+  print('Generating pdfs...')
+  Cairo('coder_activity.pdf',
+     width = 297, height = 210, units = 'mm',
+     pointsize = 10, type = 'pdf'
   )
+  l_ply(plotslist, print)
+  dev.off()
 
-  plot.kpi <- function(){
-    # Plot them
-    print('Plotting...')
+  print('Generating svg...')
+  Cairo('coder_activity.svg',
+     width = 297, height = 210, units = 'mm',
+     pointsize = 10, type = 'svg'
+  )
+  print(plots$date_joined)
+  dev.off()
 
-    print('Generating pdfs...')
-    Cairo('coder_activity.pdf',
-       width = 297, height = 210, units = 'mm',
-       pointsize = 10, type = 'pdf'
-    )
-    l_ply(plots, print)
-    dev.off()
-
-    print('Generating svg...')
-    Cairo('coder_activity.svg',
-       width = 297, height = 210, units = 'mm',
-       pointsize = 10, type = 'svg'
-    )
-    print(plots$date_joined)
-    dev.off()
-
-    print('Finished plotting')
-  }
+  print('Finished plotting')
+}
