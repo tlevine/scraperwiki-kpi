@@ -20,7 +20,8 @@ kpi.raw$last_login <- as.POSIXct(kpi.raw$last_login)
 kpi.raw$date_joined <- as.POSIXct(kpi.raw$date_joined)
 kpi.raw$active_time <- as.numeric(difftime(kpi.raw$last_login, kpi.raw$date_joined, units = 'days'))
 
-coder_type <- function(raw){
+# Set coder type
+kpi.raw$coder_type <- (function(raw){
   # Is this a longtime active coder?
   one_month_ago <- as.POSIXct('2012-03-23')
   raw$active <- raw$last_login > one_month_ago
@@ -31,13 +32,14 @@ coder_type <- function(raw){
   raw$coder_type[raw$active & raw$longtime] <-
     'Pseudo Longtime Active Coder' # (active coder who joined in an earlier month)'
   raw$coder_type
-}
+})(kpi.raw)
 
 plot.kpi <- function(
   raw,
   sort.yvar = NULL,
   testing = FALSE,
-  min.active.days = 0.5
+  min.active.days = 0.5,
+  line.alpha = 0.5
 ){
   # Given the y variable for plotting, return some plots
   if (!is.null(sort.yvar)){
@@ -66,7 +68,7 @@ plot.kpi <- function(
   # kpi <- subset(kpi, script_count > 2)
 
   p <- ggplot(kpi) +
-    aes(x = datetime, group = username, color = longtime_active) +
+    aes(x = datetime, group = username, color = coder_type) +
     scale_x_datetime('Span of activity, from user registration to most recent login',
       format = DATEFORMAT, major = "3 months", minor = "1 month"
     ) +
@@ -75,21 +77,22 @@ plot.kpi <- function(
       theme_text(family = "sans", face = "bold"),
       panel.background = theme_rect(fill = NA, colour = NA) # Clear background
     ) +
-    geom_line(alpha = 0.2)
+    geom_line(alpha = line.alpha)
 
   p
 }
 
-p <- plot.kpi(kpi.raw)
+# Skip people with few scripts (this is about half of users)
+kpi.raw <- subset(kpi.raw, script_count > 2)
+p <- plot.kpi(kpi.raw, line.alpha = 0.2)
 
 plots <- list(
-  active_time = p + aes(y = active_time) + scale_y_continuous('User\'s days of activity'),
-  active_time_log = p + aes(y = active_time) + scale_y_log10('User\'s days of activity, log scale'),
+  active_time = p + aes(y = active_time) + scale_y_log10('User\'s days of activity'),
   script_count = p + aes(y = script_count) + scale_y_continuous('User\'s number of scripts'),
-  normalized_script_count = p + aes(y = script_count/(active_time)) + scale_y_continuous('User\'s number of scripts per day'),
-  normalized_script_count_with_names = p + aes(y = script_count/(active_time), color = alpha('black', 0.4)) +
+  normalized_script_count = p + aes(y = script_count/(active_time)) + scale_y_log10('User\'s number of scripts per day'),
+  normalized_script_count_with_names = p + aes(y = script_count/(active_time), alpha = 0.4) +
     scale_y_continuous('User\'s number of scripts per day') +
-    aes(label = username) + geom_text(color = alpha('black', 0.6)), #Usernames
+    aes(label = username) + geom_text(alpha = 0.6), #Usernames
   last_login = p + aes(y = last_login) + scale_y_datetime('User\'s date of most recent login', format = DATEFORMAT),
   date_joined = p + aes(y = date_joined) + scale_y_datetime('User\'s join date', format = DATEFORMAT)
 )
