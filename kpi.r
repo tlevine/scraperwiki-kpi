@@ -7,7 +7,7 @@ library(Cairo)
 
 DATEFORMAT = '%b%y'
 
-raw <- read.csv(
+kpi.raw <- read.csv(
   # This is a dump of the username, date_joined and last_login columns
   # from the auth_users Django table.
   'data/2012-04-23.csv',
@@ -15,10 +15,10 @@ raw <- read.csv(
   #colClasses = c('character', 'Date', 'Date')
 )
 #print(raw[sample(nrow(raw), 3),])
-raw$script_count <- as.numeric(raw$script_count)
-raw$last_login <- as.POSIXct(raw$last_login)
-raw$date_joined <- as.POSIXct(raw$date_joined)
-raw$active_time <- as.numeric(difftime(raw$last_login, raw$date_joined, units = 'days'))
+kpi.raw$script_count <- as.numeric(kpi.raw$script_count)
+kpi.raw$last_login <- as.POSIXct(kpi.raw$last_login)
+kpi.raw$date_joined <- as.POSIXct(kpi.raw$date_joined)
+kpi.raw$active_time <- as.numeric(difftime(kpi.raw$last_login, kpi.raw$date_joined, units = 'days'))
 
 plot.kpi <- function(
   raw,
@@ -67,7 +67,7 @@ plot.kpi <- function(
   p
 }
 
-p <- plot.kpi(raw)
+p <- plot.kpi(kpi.raw)
 
 plots <- list(
   active_time = p + aes(y = active_time) + scale_y_continuous('User\'s days of activity'),
@@ -82,12 +82,12 @@ plots <- list(
 )
 
 # Plot where the y axis is username sorted by sort.yvar
-raw.subset <- subset(raw, script_count > 2)
+kpi.raw.subset <- subset(kpi.raw, script_count > 2)
 plots.byuser <- list(
-  last_login = plot.kpi(raw, 'last_login') + aes(y = username) + scale_y_discrete(ylab),
-  last_login_subset = plot.kpi(raw.subset, 'last_login') + aes(y = username) + scale_y_discrete(ylab),
-  date_joined = plot.kpi(raw, 'date_joined') + aes(y = username) + scale_y_discrete(ylab),
-  date_joined_subset = plot.kpi(raw.subset, 'date_joined') + aes(y = username) + scale_y_discrete(ylab)
+  last_login = plot.kpi(kpi.raw, 'last_login') + aes(y = username) + scale_y_discrete('Users'),
+  last_login_subset = plot.kpi(kpi.raw.subset, 'last_login') + aes(y = username) + scale_y_discrete('Users with more than two scripts'),
+  date_joined = plot.kpi(kpi.raw, 'date_joined') + aes(y = username) + scale_y_discrete('Users'),
+  date_joined_subset = plot.kpi(kpi.raw.subset, 'date_joined') + aes(y = username) + scale_y_discrete('Users with more than two scripts')
 )
 
 plot.kpi.save <- function(plotslist = plots){
