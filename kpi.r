@@ -137,7 +137,20 @@ plots.other <- list(
     aes(size = script_count),
   longtime10 = plot.longtime(subset(kpi.raw, script_count >= 10),
     'ScraperWiki Coder Activity, each point is a user with ten or more scripts') +
-    aes(size = script_count)
+    aes(size = script_count),
+  proportional_recent_inactivity = ggplot(
+      kpi.raw
+    # subset(kpi.raw, coder_type != 'Inactive Coder')
+    ) + 
+    aes(
+      x = last_login, color = coder_type,
+      y = as.numeric((as.POSIXct('2012-04-23') - last_login)/active_time)
+    ) +
+    scale_y_log10('Proportional span of recent inactivity') +
+    scale_x_datetime('Date of last login',
+      format = DATEFORMAT, major = "3 months", minor = "1 month"
+    ) + KPI.OPTS +
+    geom_point()
 )
 
 plot.kpi.save <- function(){
