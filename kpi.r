@@ -24,6 +24,7 @@ kpi.raw$script_count <- as.numeric(kpi.raw$script_count)
 kpi.raw$last_login <- as.POSIXct(kpi.raw$last_login)
 kpi.raw$date_joined <- as.POSIXct(kpi.raw$date_joined)
 kpi.raw$active_time <- as.numeric(difftime(kpi.raw$last_login, kpi.raw$date_joined, units = 'days'))
+kpi.raw$proportional_inactivity <- as.numeric(difftime(as.POSIXct('2012-04-24'), kpi.raw$last_login, units = 'days'))/kpi.raw$active_time
 
 # Set coder type
 kpi.raw$coder_type <- (function(raw){
@@ -141,12 +142,13 @@ plots.other <- list(
 )
 plots.proportional_inactivity <- list(
   base = ggplot(
-      kpi.raw
+    # kpi.raw
+      subset(kpi.raw, active_time > 1)
     # subset(kpi.raw, coder_type != 'Inactive Coder')
     ) + 
     aes(
 color = coder_type,
-      y = as.numeric((as.POSIXct('2012-04-23') - last_login)/active_time)
+      y = proportional_inactivity
     ) + KPI.OPTS +
     scale_y_log10('Proportional span of recent inactivity')
 
@@ -155,7 +157,7 @@ plots.proportional_inactivity$last_login <- plots.proportional_inactivity$base +
   aes(x = last_login) +
   scale_x_datetime('Date of last login',
     format = DATEFORMAT, major = "3 months", minor = "1 month") +
-  geom_point()
+  geom_jitter()
 plots.proportional_inactivity$script_count <- plots.proportional_inactivity$base +
   aes(x = script_count) +
   scale_x_log10('Script count') +
