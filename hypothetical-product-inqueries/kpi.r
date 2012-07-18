@@ -47,7 +47,7 @@ kpi.raw$coder_type <- (function(raw){
 })(kpi.raw)
 
 # This gets us
-kpi.plot <- function(kpi.raw, coder_type_labes = F) {
+kpi.plot <- function(kpi.raw, coder_type_labels=FALSE) {
   plot(active_days ~ I(0-days_since_login), data=kpi.raw, axes=F,
     xlab='Days since login (Fewer days implies more activeness.)',
     ylab='Days from sign up to last login (More days implies more longtimeness.)',
@@ -75,17 +75,20 @@ kpi.plot <- function(kpi.raw, coder_type_labes = F) {
 kpi.sampling.frame <- function(kpi.raw, intercept, slope){
   y <- kpi.raw$active_days
   x <- kpi.raw$days_since_login
-  kpi.raw[y > (intercept + slope * x) & (y > 70) ,]
+  s <- kpi.raw
+  s$longtime_activeness <- scale(princomp(data.frame(x,y))$scores[,1])
+
+  s[y > (intercept + slope * x) & (y > 70) ,]
 }
 
 # Skip people with few scripts (this is about half of users)
 kpi.raw <- subset(kpi.raw, script_count > 2)
 
 # Plot everything
-# kpi.plot(kpi.raw, coder_type_labes = T)
+kpi.plot(kpi.raw, coder_type_labels = T)
 
 # Arbitrary make a cutoff for the sampling frame.
 kpi.s <- kpi.sampling.frame(kpi.raw, intercept=700, slope=-1.3)
 
-kpi.plot(kpi.s)
+#kpi.plot(kpi.s)
 print(paste('Let\'s sample from these', nrow(kpi.s), 'users.'))
