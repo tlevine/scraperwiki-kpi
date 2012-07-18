@@ -76,8 +76,9 @@ kpi.sampling.frame <- function(kpi.raw, intercept, slope){
   y <- kpi.raw$active_days
   x <- kpi.raw$days_since_login
   s <- kpi.raw
-  s$longtime_activeness <- scale(princomp(data.frame(x,y))$scores[,1])
-
+  l <- princomp(data.frame(x,y))$scores[,1]
+  s$longtime_activeness <- l
+  rownames(s) <- s$username
   s[y > (intercept + slope * x) & (y > 70) ,]
 }
 
@@ -92,3 +93,8 @@ kpi.s <- kpi.sampling.frame(kpi.raw, intercept=700, slope=-1.3)
 
 #kpi.plot(kpi.s)
 print(paste('Let\'s sample from these', nrow(kpi.s), 'users.'))
+
+# Calibrate
+users <- c('goatchurch', 'zarino', 'frabcus', 'tlevine', 'amcguire62', 'dragon', 'drj11', 'henare')
+kpi.calibration <- kpi.s[users,]
+print(na.omit(kpi.calibration[order(kpi.calibration$longtime_activeness),])['longtime_activeness'])
