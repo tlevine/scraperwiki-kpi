@@ -82,6 +82,22 @@ kpi.sampling.frame <- function(kpi.raw, intercept, slope){
   s[y > (intercept + slope * x) & (y > 70) ,]
 }
 
+# Calibrate
+kpi.calibrate <- function(kpi.s) {
+  users <- c(
+    'goatchurch',
+    'zarino',
+    'frabcus',
+    'tlevine',
+    'amcguire62',
+    'dragon',
+    'drj11',
+    'henare'
+  )
+  foo <- kpi.s[users,]
+  na.omit(foo[order(foo$longtime_activeness),])['longtime_activeness']
+}
+
 # Skip people with few scripts (this is about half of users)
 kpi.raw <- subset(kpi.raw, script_count > 2)
 
@@ -94,7 +110,4 @@ kpi.s <- kpi.sampling.frame(kpi.raw, intercept=700, slope=-1.3)
 #kpi.plot(kpi.s)
 print(paste('Let\'s sample from these', nrow(kpi.s), 'users.'))
 
-# Calibrate
-users <- c('goatchurch', 'zarino', 'frabcus', 'tlevine', 'amcguire62', 'dragon', 'drj11', 'henare')
-kpi.calibration <- kpi.s[users,]
-print(na.omit(kpi.calibration[order(kpi.calibration$longtime_activeness),])['longtime_activeness'])
+kpi.calibrate(kpi.s)
