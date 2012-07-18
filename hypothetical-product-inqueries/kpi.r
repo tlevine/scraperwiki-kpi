@@ -2,15 +2,15 @@
 
 library(reshape2)
 library(plyr)
-library(ggplot2)
-library(Cairo)
+#library(ggplot2)
+#library(Cairo)
 
 DATEFORMAT = '%b%y'
-KPI.OPTS <- opts(
-  title = 'ScraperWiki Coder Activity, each line is a user',
-  theme_text(family = "sans", face = "bold"),
-  panel.background = theme_rect(fill = NA, colour = NA) # Clear background
-)
+#KPI.OPTS <- opts(
+#  title = 'ScraperWiki Coder Activity, each line is a user',
+#  theme_text(family = "sans", face = "bold"),
+#  panel.background = theme_rect(fill = NA, colour = NA) # Clear background
+#)
 
 kpi.raw <- read.csv(
   # This is a dump of the username, date_joined and last_login columns
@@ -23,8 +23,14 @@ kpi.raw <- read.csv(
 kpi.raw$script_count <- as.numeric(kpi.raw$script_count)
 kpi.raw$last_login <- as.POSIXct(kpi.raw$last_login)
 kpi.raw$date_joined <- as.POSIXct(kpi.raw$date_joined)
-kpi.raw$active_time <- as.numeric(difftime(kpi.raw$last_login, kpi.raw$date_joined, units = 'days'))
-kpi.raw$proportional_inactivity <- as.numeric(difftime(as.POSIXct('2012-04-24'), kpi.raw$last_login, units = 'days'))/kpi.raw$active_time
+kpi.raw$active_days <- as.numeric(difftime(kpi.raw$last_login, kpi.raw$date_joined, units = 'days'))
+kpi.raw$proportional_inactivity <- as.numeric(difftime(as.POSIXct('2012-04-24'), kpi.raw$last_login, units = 'days'))/kpi.raw$active_days
+
+kpi.raw$days_since_login <- as.numeric(difftime(
+  as.POSIXct('2012-07-18'),
+  kpi.raw$last_login,
+  units='days'))
+
 
 # Set coder type
 kpi.raw$coder_type <- (function(raw){
@@ -40,58 +46,30 @@ kpi.raw$coder_type <- (function(raw){
   raw$coder_type
 })(kpi.raw)
 
-melt.kpi <- function(
-  raw = kpi.raw,
-  min.active.days = 0.5
-){
-  kpi <- melt(raw,
-    id.vars = colnames(raw), measure.vars = c('date_joined', 'last_login'),
-    variable.name = 'event', value.name = 'datetime'
+# This gets us
+kpi.plot.all <- function(kpi.raw) {
+  plot(active_days ~ I(0-days_since_login), data=kpi.raw, axes=F,
+    xlab='Days since login (Fewer days implies more activeness.)',
+    ylab='Days from sign up to last login (More days implies more longtimeness.)',
+    main='ScraperWiki coders by longtimeness and activeness',
+    pch=21,col=NULL,
+    bg=rgb(0,0,0,alpha=0.3)
   )
-  colnames(kpi)[-(1:(ncol(kpi)-2))] <- c('event', 'datetime') # Dunno why it doesn't work above
-
-  # Ignore users without low active time because they won't show up
-  # and because they'll lead to division by almost zero.
-  kpi <- subset(kpi, active_time > min.active.days)
-
-  # Ignore users with a low script-creation rate
-  # kpi <- subset(kpi, script_count/active_time > 0.1)
-
-  # Ignore users with a low script count
-  # kpi <- subset(kpi, script_count > 2)
-  kpi
-}
-
-plot.kpi <- function(
-  raw,
-  sort.yvar = NULL,
-  testing = FALSE,
-  line.alpha = 0.5,
-  ...
-){
-  # Given the y variable for plotting, return some plots
-  if (!is.null(sort.yvar)){
-    raw$username <- factor(raw$username, levels = raw$username[order(raw[,sort.yvar])])
-  }
-
-  if (testing){
-    # Subset for testing
-    raw <- raw[sample.int(nrow(raw), 100),]
-  }
-
-  kpi <- melt.kpi(raw, ...)
-
-  p <- ggplot(kpi) +
-    aes(x = datetime, group = username, color = coder_type) +
-    scale_x_datetime('Span of activity, from user registration to most recent login',
-      format = DATEFORMAT, major = "3 months", minor = "1 month"
-    ) +
-    KPI.OPTS +
-    geom_line(alpha = line.alpha)
-
-  p
+  thousand <- seq(0, 1000, 100)
+  axis(1, labels=thousand, at=-thousand)
+  axis(2, labels=thousand, at=thousand)
+  text(
+    x=-c(100, 100, 400),
+    y= c(800, 200, 200),
+    labels=c(
+      'Longtime active coders',
+      'Shorttime coders',
+      'Longtime inactive coders'
+    ),
+    col=2, font=2, cex=1
+  )
 }
 
 # Skip people with few scripts (this is about half of users)
 kpi.raw <- subset(kpi.raw, script_count > 2)
-p <- plot.kpi(kpi.raw, line.alpha = 0.2)
+kpi.plot.all(kpi.raw)
