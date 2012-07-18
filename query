@@ -1,0 +1,18 @@
+#!/bin/sh
+
+set -e
+
+# Credentials
+env|grep ^DB_PASSWORD > /dev/null ||
+  (echo Set DB_PASSWORD to the database password, then run again. && exit 1)
+
+sql='
+SELECT
+  username, count(user_id) AS "script_count", last_login, date_joined
+FROM auth_user
+JOIN codewiki_usercoderole
+ON auth_user.id = codewiki_usercoderole.user_id
+GROUP BY codewiki_usercoderole.user_id;'
+
+ssh -p 7822 scraperdeploy@rush.scraperwiki.com "mysql scraperwiki_live -uscraperwiki -p${DB_PASSWORD} -e '$sql'" |
+  sed 's/\t/","/g;s/^/"/;s/$/"/;' > $(date --rfc-3339=date).csv
