@@ -47,13 +47,14 @@ kpi.raw$coder_type <- (function(raw){
 })(kpi.raw)
 
 # This gets us
-kpi.plot <- function(kpi.raw, coder_type_labels=FALSE) {
+kpi.plot <- function(kpi.raw, coder_type_labels=FALSE, ...) {
   plot(active_days ~ I(0-days_since_login), data=kpi.raw, axes=F,
     xlab='Days since login (Fewer days implies more activeness.)',
     ylab='Days from sign up to last login (More days implies more longtimeness.)',
     main='ScraperWiki coders by longtimeness and activeness',
     pch=21,col=NULL,
-    bg=rgb(0,0,0,alpha=0.3)
+    bg=rgb(0,0,0,alpha=0.3),
+    ...
   )
   thousand <- seq(0, 1000, 100)
   axis(1, labels=thousand, at=-thousand)
@@ -79,7 +80,7 @@ kpi.sampling.frame <- function(kpi.raw, intercept, slope){
   l <- princomp(data.frame(x,y))$scores[,1]
   s$longtime_activeness <- l
   rownames(s) <- s$username
-  s[y > (intercept + slope * x) & (y > 70) ,]
+  s[y > (intercept + slope * x) & (y > 200) ,]
 }
 
 # Calibrate
@@ -91,8 +92,13 @@ kpi.calibrate <- function(kpi.s) {
     'tlevine',
     'amcguire62',
     'dragon',
-    'drj11',
-    'henare'
+    'drj',
+    'henare',
+    'AnnaPS',
+    'july',
+    'owl',
+    'maxogden',
+    ''
   )
   foo <- kpi.s[users,]
   na.omit(foo[order(foo$longtime_activeness),])['longtime_activeness']
@@ -110,4 +116,4 @@ kpi.s <- kpi.sampling.frame(kpi.raw, intercept=700, slope=-1.3)
 #kpi.plot(kpi.s)
 print(paste('Let\'s sample from these', nrow(kpi.s), 'users.'))
 
-kpi.calibrate(kpi.s)
+print(kpi.calibrate(kpi.s))
